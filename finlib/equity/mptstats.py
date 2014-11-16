@@ -5,20 +5,20 @@ Created on Tue Sep 16 15:25:31 2014
 @author: Gouthaman Balaraman
 """
 
-import Quandl as ql
+#import Quandl as ql
 import pandas as pd
 import numpy as np
 import datetime
 import dutil
 
-data = ql.get("WIKI/ADT", column=11, trim_start='2008-01-01', 
-              trim_end='2014-08-31')
+#data = ql.get("WIKI/ADT", column=11, trim_start='2008-01-01', 
+#              trim_end='2014-08-31')
 
-index_data = ql.get("YAHOO/INDEX_SPY", column=6, trim_start='2008-01-01', 
-              trim_end='2014-08-31')
+#index_data = ql.get("YAHOO/INDEX_SPY", column=6, trim_start='2008-01-01', 
+#              trim_end='2014-08-31')
               
-rfr_data = ql.get("USTREASURY/YIELD", column=1, trim_start='2008-01-01', 
-              trim_end='2014-08-31')
+#rfr_data = ql.get("USTREASURY/YIELD", column=1, trim_start='2008-01-01', 
+#              trim_end='2014-08-31')
 
 
 
