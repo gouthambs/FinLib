@@ -5,3 +5,4 @@ Created on Fri Oct 31 16:11:50 2014
 @author: Goutham
 """
 
+from .mptstats import MPTStats

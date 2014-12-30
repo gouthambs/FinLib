@@ -1,7 +1,9 @@
 __author__ = 'gbalaraman'
+
+
 from datetime import date
 import unittest
-from finlib import CashflowGenerator, FRMCashflowGenerator
+from finlib.fi import CashflowGenerator, FRMCashflowGenerator
 
 class CashflowTest(unittest.TestCase):
 
