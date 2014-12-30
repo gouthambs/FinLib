@@ -39,6 +39,7 @@ class QuandlData(object):
                     (cache[1]<end_date) or (cache[2]!=column):
                     fetch = True
                 else:
+                    print "Cache for %s"%qcode
                     data = cache[3]
             else:
                 fetch = True
@@ -47,6 +48,7 @@ class QuandlData(object):
             fetch = True
         try:
             if fetch:
+                print "Fetch for %s"%qcode
                 trim_start = self._format_date( start_date )
                 trim_end = self._format_date(end_date)
                 data = ql.get(qcode, column=column, trim_start=trim_start, 

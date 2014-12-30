@@ -9,7 +9,7 @@ Created on Tue Sep 16 15:25:31 2014
 import pandas as pd
 import numpy as np
 import datetime
-import dutil
+from finlib.core import dutil
 
 #data = ql.get("WIKI/ADT", column=11, trim_start='2008-01-01', 
 #              trim_end='2014-08-31')
