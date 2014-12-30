@@ -31,6 +31,6 @@ class FRMCashflowGeneratorTest(unittest.TestCase):
                          )
         cfgen = FRMCashflowGenerator(data_dict)
         df = cfgen.generate_cashflow()
-        print df.head()
-        print df.tail()
+        #print df.head()
+        #print df.tail()
 

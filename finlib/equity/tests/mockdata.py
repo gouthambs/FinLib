@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+"""
+Sample mock data for testing equity sub module. Contains data the following
+data objects:
+
+- AAPL,
+- LIBORRATE,
+- NASDAQ100,
+- SP400,
+- SP500,
+- TREASURYRATE
+
+
+"""
 from pandas import Timestamp, Series
 from datetime import datetime
 

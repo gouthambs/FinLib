@@ -80,52 +80,50 @@ class MPTStats(object):
         
         exc_stock_returns = (dfslc["s_returns"] - dfslc["rfrate"]*self._dt).values
         exc_bench_returns = (dfslc["b_returns"] - dfslc["rfrate"]*self._dt).values
-        
-        result = {}
-        alpha = beta = stnddev = r2 = sharpe = treyr = trackerr = infor = \
-        sortr = momentum = annualized_return = upside = downside =  np.NaN
+
+        alpha = beta = standard_deviation = r2 = sharpe = treynor_ratio = tracking_error = information_ratio = \
+        sortino_ratio = momentum = annualized_return = upside = downside =  np.NaN
         if (span_sdate>=self.stock_series.index[0]) and \
             (span_edate<=self.stock_series.index[-1]):
-        #if (len(dfslc) == span) or (freq=='D'):
             if len(exc_stock_returns) == len(exc_bench_returns) :
-                covmat  = np.cov(exc_stock_returns, exc_bench_returns)
-                beta    = covmat[0,1]/covmat[1,1] # OLS estimation
+                covariance_matrix  = np.cov(exc_stock_returns, exc_bench_returns)
+                beta    = covariance_matrix[0,1]/covariance_matrix[1,1] # OLS estimation
                 stock_mean_return = np.mean(exc_stock_returns)
                 bench_mean_return = np.mean(exc_bench_returns)
                 alpha = (stock_mean_return - beta*bench_mean_return)/self._dt   # annualized here
-                sd = np.sqrt(covmat[0,0])  
+                sd = np.sqrt(covariance_matrix[0,0])  
                 ddof = len(exc_stock_returns) -1
                 fit = alpha*self._dt + beta*exc_bench_returns
                 sse = np.sum(np.power(fit-exc_stock_returns,2)) 
-                r2 = 1.0 - sse/(covmat[0,0]*ddof) if ddof != 0 else 0.0
+                r2 = 1.0 - sse/(covariance_matrix[0,0]*ddof) if ddof != 0 else 0.0
                 sharpe = stock_mean_return/(sd*self._sqrtdt)
-                treyr   = stock_mean_return/beta/self._dt
-                excret  = dfslc["s_returns"].values - dfslc["b_returns"].values                      
-                sd_exc  = np.std(excret,ddof=1) # unbiased
-                trackerr = (sd_exc/self._sqrtdt)
-                infor   = alpha/trackerr
+                treynor_ratio = stock_mean_return/beta/self._dt
+                excess_return  = dfslc["s_returns"].values - dfslc["b_returns"].values
+                std_excess_return  = np.std(excess_return,ddof=1) # unbiased
+                tracking_error = (std_excess_return/self._sqrtdt)
+                information_ratio   = alpha/tracking_error
                 MAR = dfslc["rfrate"].mean()*self._dt
-                semistd = self._get_semistd(dfslc["s_returns"].values, MAR)
-                sortr   = (dfslc["s_returns"].mean()-MAR)/(semistd*self._sqrtdt)
-                stnddev = sd/self._sqrtdt
+                semi_std = self._get_semistd(dfslc["s_returns"].values, MAR)
+                sortino_ratio   = (dfslc["s_returns"].mean()-MAR)/(semi_std*self._sqrtdt)
+                standard_deviation = sd/self._sqrtdt
             if calc_code & (self.MOMENTUM | self.ANNUALIZED_RETURN):
-                momentum,annualized_return = self._calc_span_return(span, freq, span_sdate, span_edate)           
+                momentum, annualized_return = self._calc_span_return(span, freq, span_sdate, span_edate)
             if calc_code & (self.UPSIDE_CAPTURE | self.DOWNSIDE_CAPTURE ):
                 upside, downside = self._calc_updown_capture(dfslc, self._dt)
                 
-        result = {"Alpha"+suffix : alpha*100., 
-                  "Beta"+suffix : beta, 
-                  "StandardDeviation"+suffix : stnddev*100.0, 
-                  "RSquared"+suffix : r2*100.0, 
-                  "SharpeRatio"+suffix : sharpe, 
-                  "TreynorRatio"+suffix : treyr,
-                  "TrackingError"+suffix : trackerr*100, 
-                  "InformationRatio"+suffix : infor, 
-                  "SortinoRatio"+suffix : sortr,
-                  "Momentum"+suffix : momentum*100.0, 
-                  "AnnualizedReturn"+suffix : annualized_return*100,
-                  "UpsideCapture"+suffix : upside*100, 
-                  "DownsideCapture"+suffix : downside*100
+        result = {"Alpha"+suffix: alpha*100.,
+                  "Beta"+suffix: beta,
+                  "StandardDeviation"+suffix: standard_deviation*100.0,
+                  "RSquared"+suffix: r2*100.0,
+                  "SharpeRatio"+suffix: sharpe,
+                  "TreynorRatio"+suffix: treynor_ratio,
+                  "TrackingError"+suffix: tracking_error*100,
+                  "InformationRatio"+suffix: information_ratio,
+                  "SortinoRatio"+suffix: sortino_ratio,
+                  "Momentum"+suffix: momentum*100.0,
+                  "AnnualizedReturn"+suffix: annualized_return*100,
+                  "UpsideCapture"+suffix: upside*100,
+                  "DownsideCapture"+suffix: downside*100
                   }
         return result
         
@@ -148,20 +146,20 @@ class MPTStats(object):
     
     def _calc_span_return(self, span, freq, span_sdate, span_edate):
         srs = self.stock_series
-        orig_startdate = startdate = span_sdate if freq=='D' else dutil.get_month_end(span_sdate)
-        stid    = srs.index.searchsorted(startdate)
-        endid   = min(srs.index.searchsorted(span_edate,side='left'),len(srs)-1)        
-        if (srs.index[stid].to_datetime()>startdate) and (stid>0) :
-            stid = stid - 1
-        if srs.index[endid].to_datetime() > span_edate:
-            endid = endid - 1
-        mmntm   = srs.iloc[endid]/srs.iloc[stid]-1
-        startdate = srs.index[stid]
-        enddate = srs.index[endid]
+        orig_start_date = startdate = span_sdate if freq=='D' else dutil.get_month_end(span_sdate)
+        start_id    = srs.index.searchsorted(startdate)
+        end_id   = min(srs.index.searchsorted(span_edate,side='left'),len(srs)-1)
+        if (srs.index[start_id].to_datetime()>startdate) and (start_id>0) :
+            start_id = start_id - 1
+        if srs.index[end_id].to_datetime() > span_edate:
+            end_id = end_id - 1
+        mmntm   = srs.iloc[end_id]/srs.iloc[start_id]-1
+        startdate = srs.index[start_id]
+        enddate = srs.index[end_id]
         n = span/12
         annualized_return = pow( 1.0 + mmntm, 1.0/(n) ) - 1
         threshold = 4
-        insuff_points = (( abs( (startdate - orig_startdate).days )>threshold )or \
+        insuff_points = (( abs( (startdate - orig_start_date).days )>threshold )or \
                 ( abs( (span_edate - enddate).days )>threshold ))
         mmntm = np.NaN if  insuff_points else mmntm
         annualized_return = np.NaN if insuff_points else annualized_return
@@ -225,8 +223,4 @@ class MPTStats(object):
         
         
 if __name__ == '__main__':
-    mpt = MPTStats(data["Adj. Close"], index_data["Adjusted Close"], rfr_data["1 Mo"]*0.01)
-    result = mpt.calculate(datetime.date(2014,8,31),span=60, freq='D')
-    print result
-
-        
+    pass
