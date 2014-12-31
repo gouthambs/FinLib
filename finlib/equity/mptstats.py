@@ -69,61 +69,71 @@ class MPTStats(object):
         self.df = self.df[["s_adjclose", "b_adjclose", "rfrate"]].fillna(method="bfill")
         
         
-    def calculate(self, asof_date, calc_code=CALC_ALL, freq='M', span = 36):
+    def calculate(self, asof_date, calc_code=CALC_ALL, freq='M', span=36):
+
+        # initialize the values
+        alpha = beta = standard_deviation = r2 = sharpe = treynor_ratio = tracking_error = information_ratio = \
+        sortino_ratio = momentum = annualized_return = upside = downside =  None
+
         self._validate_parameters(asof_date, calc_code, freq, span)
         if isinstance(asof_date, datetime.date):
             asof_date = datetime.datetime.combine(asof_date, datetime.datetime.min.time())
         suffix = "_"+freq+"_"+str(span)
-        dfsamp = self._prepare_data(freq)
         span_sdate, span_edate = self._get_start_end_dates(asof_date, freq, span)
-        dfslc = self._slice_df_to_dates(dfsamp, span_sdate, span_edate)
-        
-        exc_stock_returns = (dfslc["s_returns"] - dfslc["rfrate"]*self._dt).values
-        exc_bench_returns = (dfslc["b_returns"] - dfslc["rfrate"]*self._dt).values
 
-        alpha = beta = standard_deviation = r2 = sharpe = treynor_ratio = tracking_error = information_ratio = \
-        sortino_ratio = momentum = annualized_return = upside = downside =  np.NaN
-        if (span_sdate>=self.stock_series.index[0]) and \
-            (span_edate<=self.stock_series.index[-1]):
-            if len(exc_stock_returns) == len(exc_bench_returns) :
-                covariance_matrix  = np.cov(exc_stock_returns, exc_bench_returns)
-                beta    = covariance_matrix[0,1]/covariance_matrix[1,1] # OLS estimation
-                stock_mean_return = np.mean(exc_stock_returns)
-                bench_mean_return = np.mean(exc_bench_returns)
-                alpha = (stock_mean_return - beta*bench_mean_return)/self._dt   # annualized here
-                sd = np.sqrt(covariance_matrix[0,0])  
-                ddof = len(exc_stock_returns) -1
-                fit = alpha*self._dt + beta*exc_bench_returns
-                sse = np.sum(np.power(fit-exc_stock_returns,2)) 
-                r2 = 1.0 - sse/(covariance_matrix[0,0]*ddof) if ddof != 0 else 0.0
-                sharpe = stock_mean_return/(sd*self._sqrtdt)
-                treynor_ratio = stock_mean_return/beta/self._dt
-                excess_return  = dfslc["s_returns"].values - dfslc["b_returns"].values
-                std_excess_return  = np.std(excess_return,ddof=1) # unbiased
-                tracking_error = (std_excess_return/self._sqrtdt)
-                information_ratio   = alpha/tracking_error
-                MAR = dfslc["rfrate"].mean()*self._dt
-                semi_std = self._get_semistd(dfslc["s_returns"].values, MAR)
-                sortino_ratio   = (dfslc["s_returns"].mean()-MAR)/(semi_std*self._sqrtdt)
-                standard_deviation = sd/self._sqrtdt
-            if calc_code & (self.MOMENTUM | self.ANNUALIZED_RETURN):
-                momentum, annualized_return = self._calc_span_return(span, freq, span_sdate, span_edate)
-            if calc_code & (self.UPSIDE_CAPTURE | self.DOWNSIDE_CAPTURE ):
-                upside, downside = self._calc_updown_capture(dfslc, self._dt)
+        if (calc_code & self.MOMENTUM) or (calc_code & self.ANNUALIZED_RETURN):
+            momentum, annualized_return = self._calc_span_return(span, freq, span_sdate, span_edate)
+
+        bench_calc_codes = self.CALC_ALL - self.MOMENTUM - self.ANNUALIZED_RETURN
+        if calc_code & bench_calc_codes:
+            dfsamp = self._prepare_data(freq)
+
+            dfslc = self._slice_df_to_dates(dfsamp, span_sdate, span_edate)
+
+            exc_stock_returns = (dfslc["s_returns"] - dfslc["rfrate"]*self._dt).values
+            exc_bench_returns = (dfslc["b_returns"] - dfslc["rfrate"]*self._dt).values
+
+
+            if (span_sdate>=self.stock_series.index[0]) and \
+                (span_edate<=self.stock_series.index[-1]):
+                if len(exc_stock_returns) == len(exc_bench_returns) :
+                    covariance_matrix = np.cov(exc_stock_returns, exc_bench_returns)
+                    beta = covariance_matrix[0,1]/covariance_matrix[1,1] # OLS estimation
+                    stock_mean_return = np.mean(exc_stock_returns)
+                    bench_mean_return = np.mean(exc_bench_returns)
+                    alpha = (stock_mean_return - beta*bench_mean_return)/self._dt   # annualized here
+                    sd = np.sqrt(covariance_matrix[0,0])
+                    ddof = len(exc_stock_returns) - 1
+                    fit = alpha*self._dt + beta*exc_bench_returns
+                    sse = np.sum(np.power(fit-exc_stock_returns,2))
+                    r2 = 1.0 - sse/(covariance_matrix[0,0]*ddof) if ddof != 0 else 0.0
+                    sharpe = stock_mean_return/(sd*self._sqrtdt)
+                    treynor_ratio = stock_mean_return/beta/self._dt
+                    excess_return  = dfslc["s_returns"].values - dfslc["b_returns"].values
+                    std_excess_return  = np.std(excess_return,ddof=1) # unbiased
+                    tracking_error = (std_excess_return/self._sqrtdt)
+                    information_ratio   = alpha/tracking_error
+                    MAR = dfslc["rfrate"].mean()*self._dt
+                    semi_std = self._get_semistd(dfslc["s_returns"].values, MAR)
+                    sortino_ratio = (dfslc["s_returns"].mean()-MAR)/(semi_std*self._sqrtdt)
+                    standard_deviation = sd/self._sqrtdt
+
+                if calc_code & (self.UPSIDE_CAPTURE | self.DOWNSIDE_CAPTURE ):
+                    upside, downside = self._calc_updown_capture(dfslc, self._dt)
                 
-        result = {"Alpha"+suffix: alpha*100.,
+        result = {"Alpha"+suffix: alpha,
                   "Beta"+suffix: beta,
-                  "StandardDeviation"+suffix: standard_deviation*100.0,
-                  "RSquared"+suffix: r2*100.0,
+                  "StandardDeviation"+suffix: standard_deviation,
+                  "RSquared"+suffix: r2,
                   "SharpeRatio"+suffix: sharpe,
                   "TreynorRatio"+suffix: treynor_ratio,
-                  "TrackingError"+suffix: tracking_error*100,
+                  "TrackingError"+suffix: tracking_error,
                   "InformationRatio"+suffix: information_ratio,
                   "SortinoRatio"+suffix: sortino_ratio,
-                  "Momentum"+suffix: momentum*100.0,
-                  "AnnualizedReturn"+suffix: annualized_return*100,
-                  "UpsideCapture"+suffix: upside*100,
-                  "DownsideCapture"+suffix: downside*100
+                  "Momentum"+suffix: momentum,
+                  "AnnualizedReturn"+suffix: annualized_return,
+                  "UpsideCapture"+suffix: upside,
+                  "DownsideCapture"+suffix: downside
                   }
         return result
         
