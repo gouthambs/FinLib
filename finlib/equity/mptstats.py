@@ -69,7 +69,7 @@ class MPTStats(object):
         self.df = self.df[["s_adjclose", "b_adjclose", "rfrate"]].fillna(method="bfill")
         
         
-    def calculate(self, asof_date, calc_code=CALC_ALL, freq='M', span=36):
+    def calculate(self, asof_date, calc_code=CALC_ALL, freq='M', span=36, suffix=None):
 
         # initialize the values
         alpha = beta = standard_deviation = r2 = sharpe = treynor_ratio = tracking_error = information_ratio = \
@@ -78,7 +78,7 @@ class MPTStats(object):
         self._validate_parameters(asof_date, calc_code, freq, span)
         if isinstance(asof_date, datetime.date):
             asof_date = datetime.datetime.combine(asof_date, datetime.datetime.min.time())
-        suffix = "_"+freq+"_"+str(span)
+        suffix = freq+str(span) if suffix is None else str(suffix)
         span_sdate, span_edate = self._get_start_end_dates(asof_date, freq, span)
 
         if (calc_code & self.MOMENTUM) or (calc_code & self.ANNUALIZED_RETURN):
@@ -121,19 +121,19 @@ class MPTStats(object):
                 if calc_code & (self.UPSIDE_CAPTURE | self.DOWNSIDE_CAPTURE ):
                     upside, downside = self._calc_updown_capture(dfslc, self._dt)
                 
-        result = {"Alpha"+suffix: alpha,
-                  "Beta"+suffix: beta,
-                  "StandardDeviation"+suffix: standard_deviation,
-                  "RSquared"+suffix: r2,
-                  "SharpeRatio"+suffix: sharpe,
-                  "TreynorRatio"+suffix: treynor_ratio,
-                  "TrackingError"+suffix: tracking_error,
-                  "InformationRatio"+suffix: information_ratio,
-                  "SortinoRatio"+suffix: sortino_ratio,
-                  "Momentum"+suffix: momentum,
-                  "AnnualizedReturn"+suffix: annualized_return,
-                  "UpsideCapture"+suffix: upside,
-                  "DownsideCapture"+suffix: downside
+        result = {"alpha"+suffix: alpha, 
+                  "beta"+suffix: beta,
+                  "standardDeviation"+suffix: standard_deviation,
+                  "rSquared"+suffix: r2,
+                  "sharpeRatio"+suffix: sharpe,
+                  "treynorRatio"+suffix: treynor_ratio,
+                  "trackingError"+suffix: tracking_error,
+                  "informationRatio"+suffix: information_ratio,
+                  "sortinoRatio"+suffix: sortino_ratio,
+                  "momentum"+suffix: momentum,
+                  "annualizedReturn"+suffix: annualized_return,
+                  "upsideCapture"+suffix: upside,
+                  "downsideCapture"+suffix: downside
                   }
         return result
         
