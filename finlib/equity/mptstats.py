@@ -166,7 +166,7 @@ class MPTStats(object):
         mmntm   = srs.iloc[end_id]/srs.iloc[start_id]-1
         startdate = srs.index[start_id]
         enddate = srs.index[end_id]
-        n = span/12
+        n = float(span)/12.0
         annualized_return = pow( 1.0 + mmntm, 1.0/(n) ) - 1
         threshold = 4
         insuff_points = (( abs( (startdate - orig_start_date).days )>threshold )or \
