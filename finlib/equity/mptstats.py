@@ -171,8 +171,8 @@ class MPTStats(object):
         threshold = 4
         insuff_points = (( abs( (startdate - orig_start_date).days )>threshold )or \
                 ( abs( (span_edate - enddate).days )>threshold ))
-        mmntm = np.NaN if  insuff_points else mmntm
-        annualized_return = np.NaN if insuff_points else annualized_return
+        mmntm = None if  insuff_points else mmntm
+        annualized_return = None if insuff_points else annualized_return
         return (mmntm, annualized_return)        
         
     @staticmethod
